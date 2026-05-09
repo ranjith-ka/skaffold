@@ -1,0 +1,11 @@
+apiVersion: "run.googleapis.com/v1"
+kind: WorkerPool
+metadata:
+  name: skaffold-test-wp
+  annotations:
+    run.googleapis.com/launch-stage: BETA
+spec:
+  template:
+    spec:
+      containers:
+      - image: us-docker.pkg.dev/cloudrun/container/worker-pool

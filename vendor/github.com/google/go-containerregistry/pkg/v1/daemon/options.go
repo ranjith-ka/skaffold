@@ -18,7 +18,6 @@ import (
 	"context"
 	"io"
 
-	"github.com/docker/docker/api/types"
 	api "github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 )
@@ -30,10 +29,19 @@ type ImageOption Option
 // Option is a functional option for daemon operations.
 type Option func(*options)
 
+// bufferMode controls how the image tarball is buffered.
+type bufferMode int
+
+const (
+	bufferMemory bufferMode = iota // default: buffer entire image in memory
+	bufferNone                     // no buffering: re-save on each access
+	bufferFile                     // buffer to a temp file on disk
+)
+
 type options struct {
-	ctx      context.Context
-	client   Client
-	buffered bool
+	ctx        context.Context
+	client     Client
+	bufferMode bufferMode
 }
 
 var defaultClient = func() (Client, error) {
@@ -42,8 +50,8 @@ var defaultClient = func() (Client, error) {
 
 func makeOptions(opts ...Option) (*options, error) {
 	o := &options{
-		buffered: true,
-		ctx:      context.Background(),
+		bufferMode: bufferMemory,
+		ctx:        context.Background(),
 	}
 	for _, opt := range opts {
 		opt(o)
@@ -61,17 +69,28 @@ func makeOptions(opts ...Option) (*options, error) {
 	return o, nil
 }
 
-// WithBufferedOpener buffers the image.
+// WithBufferedOpener buffers the entire image into memory.
 func WithBufferedOpener() Option {
 	return func(o *options) {
-		o.buffered = true
+		o.bufferMode = bufferMemory
 	}
 }
 
-// WithUnbufferedOpener streams the image to avoid buffering.
+// WithUnbufferedOpener streams the image to avoid buffering it.
+// Each access triggers a new image save.
 func WithUnbufferedOpener() Option {
 	return func(o *options) {
-		o.buffered = false
+		o.bufferMode = bufferNone
+	}
+}
+
+// WithFileBufferedOpener buffers the image to a temporary file on disk.
+// This avoids holding the entire image in memory while still only
+// performing a single image save. The temporary file is cleaned up via
+// runtime.AddCleanup on the imageOpener.
+func WithFileBufferedOpener() Option {
+	return func(o *options) {
+		o.bufferMode = bufferFile
 	}
 }
 
@@ -97,9 +116,9 @@ func WithContext(ctx context.Context) Option {
 // package uses.
 type Client interface {
 	NegotiateAPIVersion(ctx context.Context)
-	ImageSave(context.Context, []string) (io.ReadCloser, error)
-	ImageLoad(context.Context, io.Reader, bool) (api.LoadResponse, error)
+	ImageSave(context.Context, []string, ...client.ImageSaveOption) (io.ReadCloser, error)
+	ImageLoad(context.Context, io.Reader, ...client.ImageLoadOption) (api.LoadResponse, error)
 	ImageTag(context.Context, string, string) error
-	ImageInspectWithRaw(context.Context, string) (types.ImageInspect, []byte, error)
-	ImageHistory(context.Context, string) ([]api.HistoryResponseItem, error)
+	ImageInspectWithRaw(context.Context, string) (api.InspectResponse, []byte, error)
+	ImageHistory(context.Context, string, ...client.ImageHistoryOption) ([]api.HistoryResponseItem, error)
 }

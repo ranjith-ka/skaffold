@@ -489,6 +489,12 @@ enum StatusCode {
     DEPLOY_CLOUD_RUN_UPDATE_SERVICE_ERR = 1030;
     // The Cloud Run Client was unable to delete the service.
     DEPLOY_CLOUD_RUN_DELETE_SERVICE_ERR = 1031;
+    // The Cloud Run Client could not get details about the workerpool.
+    DEPLOY_CLOUD_RUN_GET_WORKER_POOL_ERR = 1032;
+    // The Cloud Run Client was unable to update the workerpool.
+    DEPLOY_CLOUD_RUN_UPDATE_WORKER_POOL_ERR = 1033;
+    // The Cloud Run Client was unable to delete the workerpool.
+    DEPLOY_CLOUD_RUN_DELETE_WORKER_POOL_ERR = 1034;
 
     // Test errors
 
@@ -540,6 +546,8 @@ enum StatusCode {
     RENDER_MANIFEST_WRITE_ERR = 1408;
     // Error getting images from a kubernetes manifest.
     RENDER_PARSE_MANIFEST_IMAGES_ERR = 1409;
+    // Error due to Helm plugin registration
+    RENDER_HELM_PLUGIN_ERR = 1410;
 
     // Configuration errors
 
@@ -682,7 +690,7 @@ enum SuggestionCode {
 
     // Specify Cloud Run Location
     SPECIFY_CLOUD_RUN_LOCATION = 230;
-    
+
     // Container Run time error
 
     // Container run error
